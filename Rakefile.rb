@@ -16,4 +16,42 @@ directory GEN_FOLDER
   end
 end
 
+PROTOBUF_ARCHIVE="#{PROTOBUF_BASE}.tar.gz"
+PROTOBUF_DOWNLOAD="tmp/#{PROTOBUF_ARCHIVE}"
+
+directory 'tmp'
+
+desc "download protobuf #{PROTOBUF_VERSION}"
+file PROTOBUF_DOWNLOAD => 'tmp' do
+  cd 'tmp' do
+    command = "wget http://protobuf.googlecode.com/files/#{PROTOBUF_ARCHIVE}"
+    sh command
+  end
+end
+
+PROTOBUF_CONFIGURE=File.join(PROTOBUF_BASE, 'configure')
+desc 'unpack protobuf'
+file PROTOBUF_CONFIGURE => PROTOBUF_DOWNLOAD do |t|
+  command = "tar xf #{PROTOBUF_DOWNLOAD}"
+  sh command
+end
+
+PROTOBUF_MAKEFILE = File.join(PROTOBUF_TMP, 'Makefile')
+directory PROTOBUF_TMP
+desc 'configure protobuf creating makefile'
+file PROTOBUF_MAKEFILE => [PROTOBUF_CONFIGURE, PROTOBUF_TMP] do
+  cd PROTOBUF_TMP do
+    command = '../configure'
+    sh command
+  end
+end
+
+desc 'build protoc and libraries'
+file PROTOC => [PROTOBUF_MAKEFILE] do
+  cd PROTOBUF_TMP do
+    command = 'make'
+    sh command
+  end
+end
+
 CxxProject2Rake.new(FileList['**/*project.rb'], 'build', GCCChain, '.')
